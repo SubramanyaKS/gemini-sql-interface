@@ -1,8 +1,9 @@
 from services.llm import geminiCall
 import streamlit as st
 import pandas as pd
-from services.schema import extract_schema
+from services.schema import extract_schema, generate_schema_prompt
 from services.connect import get_connection,get_placeholder
+from services.services import generate_instruction, get_relevant_tables
 from utils.config import supported_databases
 from utils import constant as cnt
 from sqlalchemy import text
@@ -18,7 +19,6 @@ with st.sidebar:
 "Select the Database",
 supported_databases
 )
-    print(option)
     
     db_url = st.text_input(f"{option} URL", placeholder=get_placeholder(option),type="password")
     connect_btn = st.button("Connect")
@@ -37,20 +37,22 @@ if db_url:
             result_schema = extract_schema(conn)
             with st.expander(cnt.view_schema):
                 st.write("Database Schema")
-                st.code(result_schema)
+                for table, columns in result_schema.items():
+                    st.markdown(f"**{table}**")
+                    st.markdown(f"Columns: {', '.join(columns)}")
         except Exception as e:
             st.error(f"Failed to extract schema: {e}")
 
         st.markdown(cnt.ask_question)
-
-        sql_instruct = f"""You are a {option} expert. Convert natural language questions into accurate, efficient {option} queries. Use standard SQL syntax. The table schema is provided: {result_schema}. Do not include DROP, DELETE, UPDATE, INSERT, or any data-modifying command."""
-
         with st.form("text_to_sql_form"):
             user_input = st.text_input(cnt.enter_question)
             submitted = st.form_submit_button("Generate SQL")
 
         if submitted:
-            result_sql = geminiCall(user_input, sql_instruct)
+            relevant_tables = get_relevant_tables(user_input, result_schema)
+            schema_text = generate_schema_prompt(relevant_tables, result_schema)
+            sql_instruction= generate_instruction(option,schema_text)
+            result_sql = geminiCall(user_input, sql_instruction)
             st.session_state["generated_sql"] = result_sql
 
         if "generated_sql" in st.session_state:
