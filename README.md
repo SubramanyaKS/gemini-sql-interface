@@ -16,7 +16,7 @@ This project is a simple Text-to-SQL interface where users can input natural lan
 
 ## 🔧 Setup Instructions
 
-### 1. Clone the repository
+1. Clone the repository
 
 ```bash
 git clone https://github.com/SubramanyaKS/gemini-sql-interface.git
@@ -24,7 +24,7 @@ cd gemini-sql-interface
 ```
 2. Create a virtual environment (optional but recommended)
 ```bash
-python -m venv venv
+python -m venv .venv
 source venv/bin/activate
    or 
 venv\Scripts\activate on Windows
